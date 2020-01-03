@@ -21,6 +21,7 @@ const setVehicles: (ins: VehicleDb, vehicles: Array<Partial<IVehicleLocationExte
     (ins: VehicleDb, vehicles: any[]): void => {
         (ins as any).mVehicles = vehicles;
     };
+type PartialLocation = Partial<IVehicleLocationExtended>;
 describe("vehicle-db.ts", () => {
     describe("VehicleDb", () => {
         let instance: VehicleDb;
@@ -45,14 +46,79 @@ describe("vehicle-db.ts", () => {
             sandbox.restore();
             clock.restore();
         });
-        const testVehiclesId: Array<Partial<IVehicleLocationExtended>> = [
+        const testVehiclesId: PartialLocation[] = [
             { id: "any id1" as VehicleId },
             { id: 2939 as VehicleId },
         ];
-        const testVehiclesTripId: Array<Partial<IVehicleLocationExtended>> = [
+        const testVehiclesTripId: PartialLocation[] = [
             { tripId: "any id2" as TripId },
             { tripId: 2969 as TripId },
         ];
+        const testVehicles: PartialLocation[] = [1, 2, 3, 4, 5]
+            .reduce((pre: PartialLocation[], cur: number) => {
+                for (let i = 0; i < 5; i++) {
+                    pre.push({
+                        id: ("id" + i + cur) as VehicleId,
+                        lastUpdate: clockNowTimestamp - 10 + (i * 5) + cur,
+                        latitude: i,
+                        longitude: cur,
+                        tripId: ("trip" + i + cur) as TripId,
+                    });
+                }
+                return pre;
+            }, []);
+        describe("getVehicles(lastUpdate)", () => {
+            it("should return all items", () => {
+                setVehicles(instance, testVehicles);
+                expect(instance.getVehicles()).to.deep.equal(testVehicles);
+            });
+            it("should return all items", () => {
+                setVehicles(instance, testVehicles);
+                const result: any[] = instance.getVehicles(clockNowTimestamp + 10);
+                expect(result).to.have.lengthOf(6);
+                [
+                    {
+                        id: "id35",
+                        lastUpdate: 123466,
+                        latitude: 3,
+                        longitude: 5,
+                        tripId: "trip35",
+                    }, {
+                        id: "id41",
+                        lastUpdate: 123467,
+                        latitude: 4,
+                        longitude: 1,
+                        tripId: "trip41",
+                    }, {
+                        id: "id42",
+                        lastUpdate: 123468,
+                        latitude: 4,
+                        longitude: 2,
+                        tripId: "trip42",
+                    }, {
+                        id: "id43",
+                        lastUpdate: 123469,
+                        latitude: 4,
+                        longitude: 3,
+                        tripId: "trip43",
+                    }, {
+                        id: "id44",
+                        lastUpdate: 123470,
+                        latitude: 4,
+                        longitude: 4,
+                        tripId: "trip44",
+                    }, {
+                        id: "id45",
+                        lastUpdate: 123471,
+                        latitude: 4,
+                        longitude: 5,
+                        tripId: "trip45",
+                    },
+                ].forEach((val) => {
+                    expect(result).to.deep.include(val, "result must include: " + JSON.stringify(val));
+                });
+            });
+        });
         describe("getVehicleById(id)", () => {
             it("should return undefined if no item is in the list", () => {
                 setVehicles(instance, []);
@@ -62,7 +128,7 @@ describe("vehicle-db.ts", () => {
                 setVehicles(instance, testVehiclesId);
                 expect(instance.getVehicleById("id1" as VehicleId)).to.equal(undefined);
             });
-            testVehiclesId.forEach((val: Partial<IVehicleLocationExtended>) => {
+            testVehiclesId.forEach((val: PartialLocation) => {
                 it("should return element with id '" + val.id + "' if the queried id is unknown", () => {
                     setVehicles(instance, testVehiclesId);
                     expect(instance.getVehicleById(val.id as VehicleId)).to.deep.equal(val);
@@ -78,7 +144,7 @@ describe("vehicle-db.ts", () => {
                 setVehicles(instance, testVehiclesTripId);
                 expect(instance.getVehicleByTripId("id1" as TripId)).to.equal(undefined);
             });
-            testVehiclesTripId.forEach((val: Partial<IVehicleLocationExtended>) => {
+            testVehiclesTripId.forEach((val: PartialLocation) => {
                 it("should return element with tripId '" + val.tripId + "' if the queried id is unknown", () => {
                     setVehicles(instance, testVehiclesTripId);
                     expect(instance.getVehicleByTripId(val.tripId as TripId)).to.deep.equal(val);
