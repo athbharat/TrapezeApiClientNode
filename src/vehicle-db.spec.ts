@@ -12,6 +12,7 @@ import { expect } from "chai";
 import "mocha";
 import * as sinon from "sinon";
 import { VehicleDb } from "./vehicle-db";
+type PartialLocation = Partial<IVehicleLocationExtended>;
 /**
  * Helper method
  * @param ins
@@ -21,7 +22,8 @@ const setVehicles: (ins: VehicleDb, vehicles: Array<Partial<IVehicleLocationExte
     (ins: VehicleDb, vehicles: any[]): void => {
         (ins as any).mVehicles = vehicles;
     };
-type PartialLocation = Partial<IVehicleLocationExtended>;
+const getVehicles: (ins: VehicleDb) => PartialLocation[] = (ins: VehicleDb): PartialLocation[] =>
+    (ins as any).mVehicles;
 describe("vehicle-db.ts", () => {
     describe("VehicleDb", () => {
         let instance: VehicleDb;
@@ -139,6 +141,38 @@ describe("vehicle-db.ts", () => {
             it("should return the lastUpdate value", () => {
                 (instance as any).mLastUpdate = 1337;
                 expect(instance.lastUpdate).to.equal(1337);
+            });
+        });
+        describe("addAll(locations)", () => {
+            [0, 1].forEach((ttl) => {
+                describe("ttl is " + (ttl > 0 ? "greater " : "") + "0", () => {
+                    beforeEach(() => {
+                        instance.ttl = ttl;
+                    });
+                    afterEach(() => {
+                        const highestValue: number = getVehicles(instance)
+                            .reduce((prev, cur: any) =>
+                                Math.max(prev, cur.lastUpdate), 0);
+                        expect((instance as any).mLastUpdate).to.equal(highestValue);
+                    });
+                    it("should only drop timed out elements if provided empty array and populated before", () => {
+                        setVehicles(instance, testVehicles);
+                        expect(getVehicles(instance)).to.deep
+                            .equal(testVehicles, "should contain vehicles before test");
+                        instance.addAll([]);
+                        expect(getVehicles(instance)).to.deep.equal(testVehicles.filter((value: any) => {
+                            if (ttl === 0) {
+                                return true;
+                            }
+                            return value.lastUpdate + 1 >= clockNowTimestamp;
+                        }));
+                    });
+                    it("should only drop timed out elements if provided empty array and not populated before", () => {
+                        expect(getVehicles(instance)).to.have.lengthOf(0, "should contain vehicles before test");
+                        instance.addAll([]);
+                        expect(getVehicles(instance)).to.have.lengthOf(0);
+                    });
+                });
             });
         });
         describe("getVehicleByTripId(id)", () => {

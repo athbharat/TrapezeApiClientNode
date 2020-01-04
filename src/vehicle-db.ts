@@ -14,7 +14,7 @@ type VehicleIdMap = Map<VehicleId, IVehicleLocationExtended>;
 export class VehicleDb {
     private mVehicles: IVehicleLocationExtended[] = [];
     private mLastUpdate: number = 0;
-    public constructor(private readonly ttl: number = 0) {
+    public constructor(public ttl: number = 0) {
 
     }
     public get lastUpdate(): number {
@@ -62,7 +62,7 @@ export class VehicleDb {
      * @since 3.0.0
      */
     public addAll(locations: IVehicleLocationExtended[]): void {
-        const dataMap: VehicleIdMap = locations
+        const dataMap: VehicleIdMap = this.mVehicles.concat(locations)
             .reduce<VehicleIdMap>((prev: VehicleIdMap, cur: IVehicleLocationExtended): VehicleIdMap => {
                 if (prev.has(cur.id)) {
                     const curEntry: IVehicleLocationExtended | undefined = prev.get(cur.id);
@@ -70,7 +70,7 @@ export class VehicleDb {
                         return prev;
                     }
                 }
-                if (this.ttl < 0 || cur.lastUpdate + this.ttl > Date.now()) {
+                if (this.ttl <= 0 || cur.lastUpdate + this.ttl >= Date.now()) {
                     prev.set(cur.id, cur);
                 }
                 return prev;
