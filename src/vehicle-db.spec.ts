@@ -135,6 +135,12 @@ describe("vehicle-db.ts", () => {
                 });
             });
         });
+        describe("lastUpdate", () => {
+            it("should return the lastUpdate value", () => {
+                (instance as any).mLastUpdate = 1337;
+                expect(instance.lastUpdate).to.equal(1337);
+            });
+        });
         describe("getVehicleByTripId(id)", () => {
             it("should return undefined if no item is in the list", () => {
                 setVehicles(instance, []);
@@ -217,6 +223,73 @@ describe("vehicle-db.ts", () => {
                 const result: any[] = instance.convertResponse({} as any);
                 expect(result).to.have.lengthOf(0);
             });
+        });
+        describe("getVehiclesIn(left, right, top, bottom, since)", () => {
+            [undefined, clockNowTimestamp + 10]
+                .forEach((useLastUpdate: any) => {
+                    describe("lastUpdate argument " + (useLastUpdate ? "" : "not ") + "provided", () => {
+                        describe("invalid parameter are provided", () => {
+                            it("should reject if left is not smaller than right", () => {
+                                expect(() => {
+                                    instance.getVehiclesIn(1, 1, 1, 2, useLastUpdate as any);
+                                }).to.throw("left must be smaller than right");
+                            });
+                            it("should reject if bottom is not smaller than top", () => {
+                                expect(() => {
+                                    instance.getVehiclesIn(1, 2, 2, 2, useLastUpdate as any);
+                                }).to.throw("top must be greater than bottom");
+                            });
+                        });
+                        const testData1: any[] = [
+                            {
+                                id: "id42",
+                                lastUpdate: 123468,
+                                latitude: 4,
+                                longitude: 2,
+                                tripId: "trip42",
+                            }, {
+                                id: "id43",
+                                lastUpdate: 123469,
+                                latitude: 4,
+                                longitude: 3,
+                                tripId: "trip43",
+                            }, {
+                                id: "id44",
+                                lastUpdate: 123470,
+                                latitude: 4,
+                                longitude: 4,
+                                tripId: "trip44",
+                            }];
+                        const testData2: any[] = testData1.concat([{
+                            id: "id34",
+                            lastUpdate: 123465,
+                            latitude: 3,
+                            longitude: 4,
+                            tripId: "trip34",
+                        }, {
+                            id: "id33",
+                            lastUpdate: 123464,
+                            latitude: 3,
+                            longitude: 3,
+                            tripId: "trip33",
+                        }, {
+                            id: "id32",
+                            lastUpdate: 123463,
+                            latitude: 3,
+                            longitude: 2,
+                            tripId: "trip32",
+                        }]);
+                        it("should return only valid objects", () => {
+                            setVehicles(instance, testVehicles);
+                            const result: any[] = instance.getVehiclesIn(2, 4, 4, 3, useLastUpdate as any);
+                            expect(result).to.have.lengthOf(useLastUpdate ? 3 : 6);
+                            (useLastUpdate ? testData1 : testData2)
+                                .forEach((val) => {
+                                    expect(result).to.deep.contain(val);
+                                });
+                        });
+                    });
+                });
         });
     });
 });
