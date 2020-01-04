@@ -209,6 +209,14 @@ describe("vehicle-db.ts", () => {
                     tripId: "tripId3",
                 }]);
             });
+            it("should return empty array for an undefined parameter", () => {
+                const result: any[] = instance.convertResponse(undefined as any);
+                expect(result).to.have.lengthOf(0);
+            });
+            it("should return empty array for an undefined vehicles property", () => {
+                const result: any[] = instance.convertResponse({} as any);
+                expect(result).to.have.lengthOf(0);
+            });
         });
     });
 });
